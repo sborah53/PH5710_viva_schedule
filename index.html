@@ -1,1 +1,385 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PH5710: Viva Schedule</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 40vh;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+        body {
+            background-color: #f8fafc;
+        }
+        .break-row {
+            background-color: #fef3c7;
+            font-weight: 600;
+            color: #92400e;
+        }
+    </style>
+    <!-- Chosen Palette: Slate and Indigo with Amber accents for breaks. -->
+    <!-- Application Structure Plan: The SPA uses a dashboard layout. It opens with high-level summary statistics to provide immediate context. A chart section visualizes the distribution of students by department to provide an analytical angle not immediately obvious from the raw table. The core feature is an interactive, tabbed schedule viewer with real-time search functionality, allowing users to effortlessly find specific students or browse by day without excessive scrolling. -->
+    <!-- Visualization & Content Choices: Report Info: Class Demographics -> Goal: Compare -> Viz: Donut Chart -> Interaction: Hover tooltips -> Justification: Quickly shows the proportion of students from different departments -> Library: Chart.js. Report Info: Schedule -> Goal: Organize & Find -> Viz: Interactive Tabbed Table -> Interaction: Search/Filter & Tab Switching -> Justification: Makes a long list easily navigable and searchable -> Library: Vanilla JS. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+</head>
+<body class="text-slate-800 font-sans antialiased">
+
+    <nav class="bg-indigo-900 text-white shadow-lg sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center gap-3">
+                    <span class="text-2xl">⚛️</span>
+                    <span class="font-bold text-xl tracking-tight">PH5710: Quantum Computing</span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12">
+
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-8">
+            <h1 class="text-3xl font-extrabold text-slate-900 mb-4">Course Registration & Viva Schedule</h1>
+            <p class="text-lg text-slate-600 leading-relaxed mb-6">
+                Welcome to the interactive schedule for the PH5710 Introduction to Quantum Computing viva examinations. 
+                This dashboard organizes the schedule into an easily searchable format, providing an overview of the 
+                class demographics and allowing students and instructors to quickly locate specific time slots across 
+                the two-day examination period.
+            </p>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="bg-slate-50 rounded-xl p-5 border border-slate-100 flex items-center gap-4">
+                    <div class="text-3xl bg-indigo-100 text-indigo-600 p-3 rounded-lg">🎓</div>
+                    <div>
+                        <div class="text-sm text-slate-500 font-medium">Total Students</div>
+                        <div class="text-2xl font-bold text-slate-900">61</div>
+                    </div>
+                </div>
+                <div class="bg-slate-50 rounded-xl p-5 border border-slate-100 flex items-center gap-4">
+                    <div class="text-3xl bg-emerald-100 text-emerald-600 p-3 rounded-lg">⏱️</div>
+                    <div>
+                        <div class="text-sm text-slate-500 font-medium">Duration/Student</div>
+                        <div class="text-2xl font-bold text-slate-900">10 mins</div>
+                    </div>
+                </div>
+                <div class="bg-slate-50 rounded-xl p-5 border border-slate-100 flex items-center gap-4">
+                    <div class="text-3xl bg-blue-100 text-blue-600 p-3 rounded-lg">📅</div>
+                    <div>
+                        <div class="text-sm text-slate-500 font-medium">Day 1 (Saturday)</div>
+                        <div class="text-2xl font-bold text-slate-900">31 Slots</div>
+                    </div>
+                </div>
+                <div class="bg-slate-50 rounded-xl p-5 border border-slate-100 flex items-center gap-4">
+                    <div class="text-3xl bg-purple-100 text-purple-600 p-3 rounded-lg">📅</div>
+                    <div>
+                        <div class="text-sm text-slate-500 font-medium">Day 2 (Sunday)</div>
+                        <div class="text-2xl font-bold text-slate-900">30 Slots</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-8">
+            <h2 class="text-2xl font-bold text-slate-900 mb-3">Class Demographics</h2>
+            <p class="text-slate-600 mb-8">
+                This section provides a breakdown of the participating students by their respective departments, extracted from their roll numbers. It helps visualize the multidisciplinary interest in the Quantum Computing course. Hover over the chart segments to see specific counts.
+            </p>
+            <div class="flex flex-col items-center">
+                <div class="chart-container">
+                    <canvas id="demographicsChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-8 overflow-hidden">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                <div class="flex bg-slate-100 p-1 rounded-lg w-full sm:w-auto">
+                    <button id="btn-day1" class="flex-1 sm:flex-none px-6 py-2.5 rounded-md text-sm font-semibold bg-white text-indigo-700 shadow-sm transition-all focus:outline-none">Saturday (Day 1)</button>
+                    <button id="btn-day2" class="flex-1 sm:flex-none px-6 py-2.5 rounded-md text-sm font-medium text-slate-600 hover:text-slate-900 transition-all focus:outline-none">Sunday (Day 2)</button>
+                </div>
+                <div class="relative w-full sm:w-72">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">🔍</span>
+                    <input type="text" id="searchInput" placeholder="Search name or roll number..." class="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all">
+                </div>
+            </div>
+
+            <div class="overflow-x-auto rounded-xl border border-slate-200">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 text-sm uppercase tracking-wider">
+                            <th class="p-4 font-semibold w-16 text-center">#</th>
+                            <th class="p-4 font-semibold">Student Name</th>
+                            <th class="p-4 font-semibold">Roll Number</th>
+                            <th class="p-4 font-semibold">Time Slot</th>
+                        </tr>
+                    </thead>
+                    <tbody id="scheduleTableBody" class="divide-y divide-slate-100 text-slate-700">
+                    </tbody>
+                </table>
+                <div id="noResultsMsg" class="hidden p-8 text-center text-slate-500">
+                    No matching students found for this day.
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="bg-slate-900 text-slate-400 py-8 text-center text-sm">
+        <p>Indian Institute of Technology Hyderabad &copy; 2026</p>
+        <p class="mt-1">PH5710: Introduction to Quantum Computing</p>
+    </footer>
+
+    <script>
+        const scheduleData = [
+            { id: "1", name: "KOCHERLA SAI KIRAN", roll: "AI24MTECH02003", time: "10:00 AM - 10:10 AM", day: 1, isBreak: false },
+            { id: "2", name: "JD Gokul Krishna", roll: "CO23BTECH11006", time: "10:10 AM - 10:20 AM", day: 1, isBreak: false },
+            { id: "3", name: "ANIRUDH SAIKRISHNAN", roll: "CS22BTECH11004", time: "10:20 AM - 10:30 AM", day: 1, isBreak: false },
+            { id: "4", name: "ADITYA VIKRAM SINGH", roll: "EE22BTECH11001", time: "10:30 AM - 10:40 AM", day: 1, isBreak: false },
+            { id: "5", name: "AJAY", roll: "EE22BTECH11002", time: "10:40 AM - 10:50 AM", day: 1, isBreak: false },
+            { id: "6", name: "AMAN KUMAR", roll: "EE22BTECH11006", time: "10:50 AM - 11:00 AM", day: 1, isBreak: false },
+            { id: "7", name: "ARYAN JAIN", roll: "EE22BTECH11011", time: "11:00 AM - 11:10 AM", day: 1, isBreak: false },
+            { id: "8", name: "DASARI MOHITH SAI NAIDU", roll: "EE22BTECH11017", time: "11:10 AM - 11:20 AM", day: 1, isBreak: false },
+            { id: "9", name: "DEVANSH JAIN", roll: "EE22BTECH11018", time: "11:20 AM - 11:30 AM", day: 1, isBreak: false },
+            { id: "-", name: "Short Break ☕", roll: "-", time: "11:30 AM - 11:40 AM", day: 1, isBreak: true },
+            { id: "10", name: "DHRUV PARASHAR", roll: "EE22BTECH11019", time: "11:40 AM - 11:50 AM", day: 1, isBreak: false },
+            { id: "11", name: "GAGAN SINGLA", roll: "EE22BTECH11021", time: "11:50 AM - 12:00 PM", day: 1, isBreak: false },
+            { id: "12", name: "GARIKAPATI SAI HARSHITH", roll: "EE22BTECH11022", time: "12:00 PM - 12:10 PM", day: 1, isBreak: false },
+            { id: "13", name: "KARTHIKEYA HANU PRAKASH KANITHI", roll: "EE22BTECH11026", time: "12:10 PM - 12:20 PM", day: 1, isBreak: false },
+            { id: "14", name: "MAYANK GUPTA", roll: "EE22BTECH11033", time: "12:20 PM - 12:30 PM", day: 1, isBreak: false },
+            { id: "15", name: "PANDRANGI ADITYA SRIRAM", roll: "EE22BTECH11039", time: "12:30 PM - 12:40 PM", day: 1, isBreak: false },
+            { id: "16", name: "RAMBHA SATVIK", roll: "EE22BTECH11043", time: "12:40 PM - 12:50 PM", day: 1, isBreak: false },
+            { id: "17", name: "SAMEER KENDAL", roll: "EE22BTECH11044", time: "12:50 PM - 1:00 PM", day: 1, isBreak: false },
+            { id: "18", name: "SAYYAM PALRECHA", roll: "EE22BTECH11047", time: "1:00 PM - 1:10 PM", day: 1, isBreak: false },
+            { id: "-", name: "Short Break ☕", roll: "-", time: "1:10 PM - 1:20 PM", day: 1, isBreak: true },
+            { id: "19", name: "SUJAL GUPTA", roll: "EE22BTECH11052", time: "1:20 PM - 1:30 PM", day: 1, isBreak: false },
+            { id: "-", name: "Lunch Break 🍱", roll: "-", time: "1:30 PM - 3:00 PM", day: 1, isBreak: true },
+            { id: "20", name: "VED SANTOSH KHILARI", roll: "EE22BTECH11056", time: "3:00 PM - 3:10 PM", day: 1, isBreak: false },
+            { id: "21", name: "Yash J Patil", roll: "EE22BTECH11058", time: "3:10 PM - 3:20 PM", day: 1, isBreak: false },
+            { id: "22", name: "AMITABHA GHOSH", roll: "EE22BTECH11203", time: "3:20 PM - 3:30 PM", day: 1, isBreak: false },
+            { id: "23", name: "MATHEW M PHILIP", roll: "EE22BTECH11211", time: "3:30 PM - 3:40 PM", day: 1, isBreak: false },
+            { id: "24", name: "PASALAPUDI SRIKRISHNA SATVIK", roll: "EE22BTECH11212", time: "3:40 PM - 3:50 PM", day: 1, isBreak: false },
+            { id: "25", name: "PAWAS DWIVEDI", roll: "EE22BTECH11213", time: "3:50 PM - 4:00 PM", day: 1, isBreak: false },
+            { id: "26", name: "SAYAN BISWAS", roll: "EE22BTECH11217", time: "4:00 PM - 4:10 PM", day: 1, isBreak: false },
+            { id: "27", name: "TALASU SOWMITH", roll: "EE22BTECH11218", time: "4:10 PM - 4:20 PM", day: 1, isBreak: false },
+            { id: "28", name: "TANMAY MAJUMDAR", roll: "EE22BTECH11219", time: "4:20 PM - 4:30 PM", day: 1, isBreak: false },
+            { id: "-", name: "Tea Break ☕", roll: "-", time: "4:30 PM - 5:00 PM", day: 1, isBreak: true },
+            { id: "29", name: "VEVEK MANDA", roll: "EE22BTECH11220", time: "5:00 PM - 5:10 PM", day: 1, isBreak: false },
+            { id: "30", name: "Aneesh Kadiyala", roll: "EE23BTECH11007", time: "5:10 PM - 5:20 PM", day: 1, isBreak: false },
+            { id: "31", name: "SASA MARDI", roll: "EE23BTECH11222", time: "5:20 PM - 5:30 PM", day: 1, isBreak: false },
+
+            { id: "32", name: "CH AKSHATH KUMAR", roll: "EP22BTECH11004", time: "10:00 AM - 10:10 AM", day: 2, isBreak: false },
+            { id: "33", name: "CHELAMAKURI NIHAR KARTIKEYA", roll: "EP22BTECH11005", time: "10:10 AM - 10:20 AM", day: 2, isBreak: false },
+            { id: "34", name: "KURELLA ANAND KASYUP", roll: "EP22BTECH11012", time: "10:20 AM - 10:30 AM", day: 2, isBreak: false },
+            { id: "35", name: "M.KRUTHISVER", roll: "EP22BTECH11014", time: "10:30 AM - 10:40 AM", day: 2, isBreak: false },
+            { id: "36", name: "SUDHANSHU SHEKHAR", roll: "EP22BTECH11026", time: "10:40 AM - 10:50 AM", day: 2, isBreak: false },
+            { id: "37", name: "Raghav Sundararaman", roll: "EP23BTECH11020", time: "10:50 AM - 11:00 AM", day: 2, isBreak: false },
+            { id: "38", name: "SHRIRAM PRAGASH M", roll: "EP23BTECH11028", time: "11:00 AM - 11:10 AM", day: 2, isBreak: false },
+            { id: "39", name: "TANAY SHARDUL GANGAN", roll: "EP23BTECH11031", time: "11:10 AM - 11:20 AM", day: 2, isBreak: false },
+            { id: "40", name: "ANGITHA SAJEEVAN KN", roll: "ID26RESCH01004", time: "11:20 AM - 11:30 AM", day: 2, isBreak: false },
+            { id: "-", name: "Short Break ☕", roll: "-", time: "11:30 AM - 11:40 AM", day: 2, isBreak: true },
+            { id: "41", name: "YASHOVARDHAN MUKERJI", roll: "MS23BTECH11035", time: "11:40 AM - 11:50 AM", day: 2, isBreak: false },
+            { id: "42", name: "SOUMADIP DAS", roll: "PH24MSCST11035", time: "11:50 AM - 12:00 PM", day: 2, isBreak: false },
+            { id: "43", name: "Ajay Kumar Sahani", roll: "PH25MTECH11001", time: "12:00 PM - 12:10 PM", day: 2, isBreak: false },
+            { id: "44", name: "DEVESH KUMAR SINGH", roll: "PH25MTECH11002", time: "12:10 PM - 12:20 PM", day: 2, isBreak: false },
+            { id: "45", name: "MANPREET SINGH MONGA", roll: "PH25MTECH11003", time: "12:20 PM - 12:30 PM", day: 2, isBreak: false },
+            { id: "46", name: "Upam Choudhury Brahma", roll: "PH25MTECH11005", time: "12:30 PM - 12:40 PM", day: 2, isBreak: false },
+            { id: "47", name: "ANSHUMAN MISHRA", roll: "PH25MTECH11006", time: "12:40 PM - 12:50 PM", day: 2, isBreak: false },
+            { id: "48", name: "Suriyanarayanan V G", roll: "PH25MTECH11007", time: "12:50 PM - 1:00 PM", day: 2, isBreak: false },
+            { id: "49", name: "AMIR HUSAIN", roll: "PH25MTECH11008", time: "1:00 PM - 1:10 PM", day: 2, isBreak: false },
+            { id: "-", name: "Short Break ☕", roll: "-", time: "1:10 PM - 1:20 PM", day: 2, isBreak: true },
+            { id: "50", name: "Alur Ankitha", roll: "PH25MTECH11009", time: "1:20 PM - 1:30 PM", day: 2, isBreak: false },
+            { id: "-", name: "Lunch Break 🍱", roll: "-", time: "1:30 PM - 3:00 PM", day: 2, isBreak: true },
+            { id: "51", name: "KODAM RAJA", roll: "PH25MTECH11010", time: "3:00 PM - 3:10 PM", day: 2, isBreak: false },
+            { id: "52", name: "Yogesh Sharma", roll: "PH25MTECH11011", time: "3:10 PM - 3:20 PM", day: 2, isBreak: false },
+            { id: "53", name: "ANDRA CHANDRA RAJU KUMAR REDDY", roll: "PH25MTECH11012", time: "3:20 PM - 3:30 PM", day: 2, isBreak: false },
+            { id: "54", name: "K.V.S.VAIBHAV SRINIVAS AYYANGAR", roll: "PH25MTECH14001", time: "3:30 PM - 3:40 PM", day: 2, isBreak: false },
+            { id: "55", name: "Kushagra Vyas", roll: "PH25MTECH14002", time: "3:40 PM - 3:50 PM", day: 2, isBreak: false },
+            { id: "56", name: "Om Gururaj Kanade", roll: "PH25MTECH14003", time: "3:50 PM - 4:00 PM", day: 2, isBreak: false },
+            { id: "57", name: "Vaddepally Kiranmayee", roll: "PH25MTECH14004", time: "4:00 PM - 4:10 PM", day: 2, isBreak: false },
+            { id: "58", name: "Parishkrith Aravind", roll: "PH25RESCH12001", time: "4:10 PM - 4:20 PM", day: 2, isBreak: false },
+            { id: "59", name: "Subodh Roushan", roll: "PH25RESCH12002", time: "4:20 PM - 4:30 PM", day: 2, isBreak: false },
+            { id: "-", name: "Tea Break ☕", roll: "-", time: "4:30 PM - 5:00 PM", day: 2, isBreak: true },
+            { id: "60", name: "Akash Kumar Saw", roll: "PH25RESCH12003", time: "5:00 PM - 5:10 PM", day: 2, isBreak: false },
+            { id: "61", name: "Anjana K", roll: "PH25RESCH12004", time: "5:10 PM - 5:20 PM", day: 2, isBreak: false },
+            { id: "-", name: "Wrap-up 🎉", roll: "-", time: "5:20 PM onwards", day: 2, isBreak: true }
+        ];
+
+        let currentDay = 1;
+        
+        function renderTable(searchTerm = "") {
+            const tbody = document.getElementById("scheduleTableBody");
+            const noResultsMsg = document.getElementById("noResultsMsg");
+            tbody.innerHTML = "";
+            
+            const lowerSearchTerm = searchTerm.toLowerCase();
+            let hasResults = false;
+
+            scheduleData.forEach(entry => {
+                if (entry.day !== currentDay) return;
+
+                const matchName = entry.name.toLowerCase().includes(lowerSearchTerm);
+                const matchRoll = entry.roll.toLowerCase().includes(lowerSearchTerm);
+                
+                if (searchTerm && !matchName && !matchRoll && !entry.isBreak) return;
+
+                hasResults = true;
+                const tr = document.createElement("tr");
+                
+                if (entry.isBreak) {
+                    if (searchTerm && !matchName && !matchRoll) return;
+                    tr.className = "break-row transition-colors";
+                    tr.innerHTML = `
+                        <td class="p-4 text-center">${entry.id}</td>
+                        <td class="p-4 font-bold" colspan="2">${entry.name}</td>
+                        <td class="p-4">${entry.time}</td>
+                    `;
+                } else {
+                    tr.className = "hover:bg-slate-50 transition-colors";
+                    tr.innerHTML = `
+                        <td class="p-4 text-center font-medium">${entry.id}</td>
+                        <td class="p-4 font-semibold text-indigo-900">${entry.name}</td>
+                        <td class="p-4 font-mono text-sm">${entry.roll}</td>
+                        <td class="p-4 text-slate-600">${entry.time}</td>
+                    `;
+                }
+                tbody.appendChild(tr);
+            });
+
+            if (!hasResults) {
+                noResultsMsg.classList.remove("hidden");
+                tbody.parentElement.classList.add("hidden");
+            } else {
+                noResultsMsg.classList.add("hidden");
+                tbody.parentElement.classList.remove("hidden");
+            }
+        }
+
+        function setupTabs() {
+            const btnDay1 = document.getElementById("btn-day1");
+            const btnDay2 = document.getElementById("btn-day2");
+
+            const activeClass = ["bg-white", "text-indigo-700", "shadow-sm", "font-semibold"];
+            const inactiveClass = ["text-slate-600", "hover:text-slate-900", "font-medium", "bg-transparent"];
+
+            btnDay1.addEventListener("click", () => {
+                currentDay = 1;
+                btnDay1.classList.remove(...inactiveClass);
+                btnDay1.classList.add(...activeClass);
+                btnDay2.classList.remove(...activeClass);
+                btnDay2.classList.add(...inactiveClass);
+                renderTable(document.getElementById("searchInput").value);
+            });
+
+            btnDay2.addEventListener("click", () => {
+                currentDay = 2;
+                btnDay2.classList.remove(...inactiveClass);
+                btnDay2.classList.add(...activeClass);
+                btnDay1.classList.remove(...activeClass);
+                btnDay1.classList.add(...inactiveClass);
+                renderTable(document.getElementById("searchInput").value);
+            });
+        }
+
+        function setupSearch() {
+            const searchInput = document.getElementById("searchInput");
+            searchInput.addEventListener("input", (e) => {
+                renderTable(e.target.value);
+            });
+        }
+
+        function renderChart() {
+            const counts = { EE: 0, EP: 0, PH: 0, AI: 0, CO: 0, CS: 0, ID: 0, MS: 0 };
+            
+            scheduleData.forEach(entry => {
+                if(entry.isBreak) return;
+                const prefix = entry.roll.substring(0, 2).toUpperCase();
+                if(counts[prefix] !== undefined) {
+                    counts[prefix]++;
+                }
+            });
+
+            const labels = ['Electrical Eng (EE)', 'Eng Physics (EP)', 'Physics (PH)', 'Artificial Intel (AI)', 'Computer Eng (CO)', 'Computer Sci (CS)', 'Interdisciplinary (ID)', 'Materials Sci (MS)'];
+            const dataValues = [counts.EE, counts.EP, counts.PH, counts.AI, counts.CO, counts.CS, counts.ID, counts.MS];
+            const colors = ['#4f46e5', '#0ea5e9', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#64748b'];
+
+            const filteredLabels = [];
+            const filteredData = [];
+            const filteredColors = [];
+
+            for(let i=0; i<dataValues.length; i++) {
+                if(dataValues[i] > 0) {
+                    filteredLabels.push(labels[i]);
+                    filteredData.push(dataValues[i]);
+                    filteredColors.push(colors[i]);
+                }
+            }
+
+            const ctx = document.getElementById('demographicsChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: filteredLabels,
+                    datasets: [{
+                        data: filteredData,
+                        backgroundColor: filteredColors,
+                        borderWidth: 2,
+                        borderColor: '#ffffff',
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: {
+                                font: {
+                                    family: "'Inter', sans-serif",
+                                    size: 13
+                                },
+                                color: '#334155',
+                                padding: 20
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: '#1e293b',
+                            titleFont: { family: "'Inter', sans-serif", size: 14 },
+                            bodyFont: { family: "'Inter', sans-serif", size: 14 },
+                            padding: 12,
+                            cornerRadius: 8,
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.label || '';
+                                    if (label) label += ': ';
+                                    label += context.raw + ' students';
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    cutout: '65%'
+                }
+            });
+        }
+
+        setupTabs();
+        setupSearch();
+        renderTable();
+        renderChart();
+    </script>
+</body>
+</html>
